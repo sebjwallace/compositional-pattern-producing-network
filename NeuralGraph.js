@@ -1,5 +1,7 @@
 
-class NGNode{
+var ng = {}
+
+class NgNode{
 
     constructor(inputs,callback){
         this.inputs = inputs
@@ -46,51 +48,233 @@ class NGNode{
 
 }
 
-class NGConstant extends NGNode{
+ng.node = {
 
-    constructor(input){
-        super([],null)
-        this.value = input
-    }
+    constant: class extends NgNode{
 
-    compute(){
-        return this.value
+        constructor(input){
+            super([],null)
+            this.value = input
+        }
+
+        compute(){
+            return this.value
+        }
+
+    },
+
+    add: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return this.inputs.reduce(function(t,n){
+                return t + n.compute()
+            },0)
+        }
+
+    },
+
+    subtract: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return this.inputs.reduce(function(t,n){
+                return t + n.compute()
+            },0)
+        }
+
+    },
+
+    multiply: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return this.inputs.reduce(function(t,n){
+                return t * n.compute()
+            },0)
+        }
+
+    },
+
+    binary: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return this.inputs[0].compute() >= 1 ? 1 : 0
+        }
+
+    },
+
+    linear: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return this.inputs[0].compute()
+        }
+
+    },
+
+    sin: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return Math.sin(this.inputs[0].compute())
+        }
+
+    },
+
+    cos: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return Math.cos(this.inputs[0].compute())
+        }
+
+    },
+
+    tanh: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return Math.tanh(this.inputs[0].compute())
+        }
+
+    },
+
+    sigmoid: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return 1/(1+Math.pow(Math.E, -this.inputs[0].compute()))
+        }
+
+    },
+
+    bipolarSigmoid: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return (2.0 / (1.0 + Math.exp(-4.9 * this.inputs[0].compute()))) - 1.0
+        }
+
+    },
+
+    guassian: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return 2 * Math.exp(-Math.pow(this.inputs[0].compute() * 2.5, 2)) - 1
+        }
+
+    },
+
+    rectifier: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            var v = this.inputs[0].compute()
+            return v >= 1 ? v : 0
+        }
+
+    },
+
+    invert: class extends NgNode{
+
+        constructor(inputs,callback){
+            super(inputs,callback)
+        }
+
+        compute(){
+            return -(this.inputs[0].compute())
+        }
+
+    },
+
+    weight: class extends NgNode{
+
+        constructor(input,weight,callback){
+            super([input],callback)
+            this.weight = weight
+        }
+
+        compute(){
+            return this.inputs[0].compute() * this.weight
+        }
+
+    },
+
+    neuron: class extends NgNode{
+
+        constructor(inputs,activation,callback){
+            for(var i in inputs)
+                inputs[i] = new ng.node.weight(inputs[i],1)
+            inputs = [new ng.node[activation]([new ng.node.add(inputs)])]
+            super(inputs,callback)
+        }
+
+        compute(){
+            return this.inputs[0].compute()
+        }
+
     }
 
 }
 
-class NGWeight extends NGNode{
+ng.network = {
 
-    constructor(input,weight,callback){
-        super([input],callback)
-        this.weight = weight
-    }
+    perceptron: class {
 
-    compute(){
-        return this.inputs[0].compute() * this.weight
-    }
+        constructor(numInputs){
+            this.inputs = []
+            for(var i = 0; i < numInputs; i++)
+                this.inputs[i] = new ng.node.neuron()
+        }
 
-}
-
-class NGSum extends NGNode{
-
-    constructor(inputs,callback){
-        super(inputs,callback)
-    }
-
-    compute(){
-        return this.inputs.reduce(function(t,n){
-            return t + n.compute()
-        },0)
     }
 
 }
 
-var a = new NGConstant(4)
-var b = new NGConstant(5)
-var c = new NGConstant(2)
-var d = new NGSum([a,b])
-var e = new NGSum([c,d],function(val){
+
+var a = new ng.node.constant(4)
+var b = new ng.node.constant(5)
+var c = new ng.node.constant(2)
+var e = new ng.node.neuron([a,b,c],'sigmoid',function(val){
     console.log(val)
 })
 
