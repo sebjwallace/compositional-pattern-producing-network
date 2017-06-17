@@ -20,6 +20,12 @@ ng.util = {
         for(var i = 0; i < nodes.length; i++)
             sum += nodes[i].compute()
         return sum
+    },
+
+    createClosure(v){
+        return function(){
+            return v
+        }
     }
 
 }
@@ -27,8 +33,8 @@ ng.util = {
 class NgNode{
 
     constructor(inputs,callback){
-        this.inputs = inputs
-        this.key = Math.random()
+        this.inputs = []
+        this.key = Math.random() * 10
         this.__value = null
         this.observers = []
         this.dependencies = {}
@@ -41,8 +47,11 @@ class NgNode{
 
     registerInputs(inputs){
         for(var i in inputs){
+            if(this.dependencies[inputs[i].key] != null)
+                continue
             inputs[i].observe(this)
             this.dependencies[inputs[i].key] = false
+            this.inputs.push(inputs[i])
         }
         return this
     }
@@ -51,6 +60,9 @@ class NgNode{
         for(var i in inputs){
             inputs[i].ignore(this)
             delete this.dependencies[inputs[i].key]
+            for(var n in this.inputs)
+                if(this.inputs[n].key == inputs[i].key)
+                    this.inputs.splice(n,1)
         }
         return this
     }
@@ -147,10 +159,6 @@ ng.node = {
 
     add: class extends NgNode{
 
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
-
         compute(){
             return this.__value || ng.util.sumNodes(this.inputs)
         }
@@ -158,10 +166,6 @@ ng.node = {
     },
 
     subtract: class extends NgNode{
-
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
 
         compute(){
             return this.__value || this.inputs.reduce(function(t,n){
@@ -173,10 +177,6 @@ ng.node = {
 
     multiply: class extends NgNode{
 
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
-
         compute(){
             return this.__value || this.inputs.reduce(function(t,n){
                 return t * n.compute()
@@ -185,11 +185,25 @@ ng.node = {
 
     },
 
-    binary: class extends NgNode{
+    divide: class extends NgNode{
 
-        constructor(inputs,callback){
-            super(inputs,callback)
+        compute(){
+            return this.__value || this.inputs.reduce(function(t,n){
+                return t / n.compute()
+            },1)
         }
+
+    },
+
+    exp: class extends NgNode{
+
+        compute(){
+            return this.__value || (ng.util.sumNodes(this.inputs) * ng.util.sumNodes(this.inputs))
+        }
+
+    },
+
+    binary: class extends NgNode{
 
         compute(){
             return this.__value || ng.util.sumNodes(this.inputs) >= 1 ? 1 : 0
@@ -199,10 +213,6 @@ ng.node = {
 
     linear: class extends NgNode{
 
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
-
         compute(){
             return this.__value || ng.util.sumNodes(this.inputs)
         }
@@ -210,10 +220,6 @@ ng.node = {
     },
 
     sin: class extends NgNode{
-
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
 
         compute(){
             return this.__value || Math.sin(ng.util.sumNodes(this.inputs))
@@ -223,10 +229,6 @@ ng.node = {
 
     cos: class extends NgNode{
 
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
-
         compute(){
             return this.__value || Math.cos(ng.util.sumNodes(this.inputs))
         }
@@ -234,10 +236,6 @@ ng.node = {
     },
 
     tanh: class extends NgNode{
-
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
 
         compute(){
             return this.__value || Math.tanh(ng.util.sumNodes(this.inputs))
@@ -247,10 +245,6 @@ ng.node = {
 
     sigmoid: class extends NgNode{
 
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
-
         compute(){
             return this.__value || 1/(1+Math.pow(Math.E, -(ng.util.sumNodes(this.inputs))))
         }
@@ -258,10 +252,6 @@ ng.node = {
     },
 
     bipolarSigmoid: class extends NgNode{
-
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
 
         compute(){
             return this.__value || (2.0 / (1.0 + Math.exp(-4.9 * ng.util.sumNodes(this.inputs)))) - 1.0
@@ -271,10 +261,6 @@ ng.node = {
 
     guassian: class extends NgNode{
 
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
-
         compute(){
             return this.__value || 2 * Math.exp(-Math.pow(ng.util.sumNodes(this.inputs) * 2.5, 2)) - 1
         }
@@ -282,10 +268,6 @@ ng.node = {
     },
 
     rectifier: class extends NgNode{
-
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
 
         compute(){
             var v = ng.util.sumNodes(this.inputs)
@@ -295,10 +277,6 @@ ng.node = {
     },
 
     invert: class extends NgNode{
-
-        constructor(inputs,callback){
-            super(inputs,callback)
-        }
 
         compute(){
             return this.__value || -(ng.util.sumNodes(this.inputs))
@@ -352,6 +330,7 @@ class NgNetwork{
         this.design = json
         this.nodes = []
         this.inputs = []
+        this.hidden = []
         this.outputs = []
         this.construct()
     }
@@ -361,14 +340,19 @@ class NgNetwork{
         this.outputs = []
         this.nodes = []
         var d = this.design
-        for(var i in d.inputs)
+        d.nodes = []
+        for(var i in d.inputs){
             this.inputs[i] = this.nodes[i] = new ng.node[d.inputs[i].node](d.inputs[i].value)
+            d.nodes.push(d.inputs[i])
+        }
         for(var i in d.hidden){
             var inputs = []
             for(var n in d.hidden[i].inputs)
                 inputs[n] = this.nodes[d.hidden[i].inputs[n]]
             var node = new ng.node[d.hidden[i].node](inputs)
+            this.hidden.push(node)
             this.nodes.push(node)
+            d.nodes.push(d.hidden[i])
         }
         for(var i in d.outputs){
             var inputs = []
@@ -378,6 +362,7 @@ class NgNetwork{
             node.setAttribute('index',i)
             this.outputs[i] = node
             this.nodes.push(node)
+            d.nodes.push(d.outputs[i])
         }
     }
 
@@ -409,17 +394,62 @@ ng.network = {
             for(var i = 0; i < numInputs; i++)
                 design.inputs[i] = {node:'variable',value:1}
             for(var i = 0; i < numOutputs; i++)
-                design.outputs[i] = {node:'linear',inputs:[]}
+                design.outputs[i] = {node:'sigmoid',inputs:[]}
             super(design)
         }
 
-        addRandomNode(){
-            var options = ['add','subtract','multiply','sin','cos','sigmoid','binary','rectifier','invert']
+        insertNode(){
+            var options = ['multiply','divide','sigmoid','guassian','sin','cos','tanh','invert','exp']
             var nodeType = options[ng.math.randomInt(0,options.length-1)]
-            this.design.hidden.push({
-                node: nodeType,
-                inputs: []
-            })
+            var node = new ng.node[nodeType]([])
+            this.hidden.push(node)
+            this.nodes.push(node)
+        }
+
+        insertNodeBetween(beforeNodes,afterNodes){
+            var node = new ng.node.sigmoid(beforeNodes)
+            for(var i in afterNodes)
+                afterNodes[i].registerInputs([node])
+            this.hidden.push(node)
+            this.nodes.push(node)
+        }
+
+        insertEdgeBetween(beforeNode,afterNode){
+            if(beforeNode.key != afterNode.key)
+                afterNode.registerInputs([beforeNode])
+        }
+
+        removeEdgeBetween(beforeNode,afterNode){
+            afterNode.unregisterInputs([beforeNode])
+        }
+
+        removeNode(node){
+            for(var i in this.nodes){
+                this.nodes[i].unregisterInputs([node])
+                if(this.nodes[i].key == node.key)
+                    this.nodes.splice(i,1)
+            }
+            for(var i in this.hidden)
+                if(this.hidden[i].key == node.key)
+                    this.hidden.splice(i,1)
+        }
+
+        insertRandomNode(){
+            var options = ['multiply','divide','sigmoid','guassian','sin','cos','tanh','invert','exp']
+            var nodeType = options[ng.math.randomInt(0,options.length-1)]
+            var min = this.inputs.length
+            var max = this.nodes.length - this.outputs.length
+            var ran = ng.math.randomInt(min,max)
+            var numInputs = ng.math.randomInt(1,ran)
+            var inputs = []
+            for(var i = 0; i < numInputs; i++)
+                inputs.push(this.nodes[ng.math.randomInt(0,ran)])
+            var node = new ng.node[nodeType](inputs)
+            var numOutputs = ng.math.randomInt(ran,this.nodes.length-1)
+            for(var i = 0; i < numOutputs; i++)
+                this.nodes[ng.math.randomInt(ran,this.nodes.length)].registerInputs([node])
+            this.nodes.splice(ran,0,node)
+            this.hidden.push(node)
         }
 
     }

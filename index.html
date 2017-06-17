@@ -6,13 +6,23 @@
 
   <body>
 
-    <canvas id="canvas" height="500" width="500"></canvas>
+    <svg id="stage" height="200" width="200"></svg>
+    <canvas id="canvas" height="200" width="200"></canvas>
 
     <script src="NeuralGraph.js"></script>
     <script src="index.js"></script>
 
     <style>
        body{margin:none;padding:none;}
+       *{
+  -webkit-touch-callout: none; /* iOS Safari */
+    -webkit-user-select: none; /* Safari */
+     -khtml-user-select: none; /* Konqueror HTML */
+       -moz-user-select: none; /* Firefox */
+        -ms-user-select: none; /* Internet Explorer/Edge */
+            user-select: none; /* Non-prefixed version, currently
+                                  supported by Chrome and Opera */
+    }
     </style>
 
   </body>
