@@ -1,19 +1,12 @@
-# neural-graph
-graph computation library
+# math-graph
 
-```javascript
+1. Press any key to add a random node
+2. click and drag from one node to another to create a connection
+3. ctrl + drag on a node to move it
+4. alt + click no a node to delete it
+ 
+![alt text](https://github.com/sebjwallace/neural-graph/blob/master/images/computation_networks.png?raw=true)
 
-   // sample graph
+![alt text](https://github.com/sebjwallace/neural-graph/blob/master/images/cppn_first.png?raw=true)
 
-   var a = ng.node.constant(2)
-   var b = ng.node.constant(4)
-   var c = ng.node.multiply([a,b])
-   var d = ng.node.add([a,c],function(value){
-      // when all input nodes have been computed d will compute
-      console.log(value)
-      // > 10
-   })
-   
-   a.fill()
-   b.fill()
-```
+![alt text](https://github.com/sebjwallace/neural-graph/blob/master/images/cppn_first2.png?raw=true)
