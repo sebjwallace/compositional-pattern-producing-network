@@ -30,7 +30,7 @@ ng.util = {
 
 }
 
-class NgNode{
+class NgNode {
 
     constructor(inputs,callback){
         this.inputs = []
@@ -324,7 +324,7 @@ ng.node = {
 
 }
 
-class NgNetwork{
+class NgNetwork {
 
     constructor(json){
         this.design = json
@@ -387,7 +387,9 @@ class NgNetwork{
 
 ng.network = {
 
-    cppn: class extends NgNetwork{
+    cppn: class extends NgNetwork {
+
+        nodeTypes = ['multiply','divide','sigmoid','guassian','sin','cos','tanh','invert','exp']
 
         constructor(numInputs,numOutputs){
             var design = {inputs:[],hidden:[],outputs:[]}
@@ -399,8 +401,7 @@ ng.network = {
         }
 
         insertNode(){
-            var options = ['multiply','divide','sigmoid','guassian','sin','cos','tanh','invert','exp']
-            var nodeType = options[ng.math.randomInt(0,options.length-1)]
+            var nodeType = this.nodeTypes[ng.math.randomInt(0,this.nodeTypes.length-1)]
             var node = new ng.node[nodeType]([])
             this.hidden.push(node)
             this.nodes.push(node)
@@ -435,8 +436,7 @@ ng.network = {
         }
 
         insertRandomNode(){
-            var options = ['multiply','divide','sigmoid','guassian','sin','cos','tanh','invert','exp']
-            var nodeType = options[ng.math.randomInt(0,options.length-1)]
+            var nodeType = this.nodeTypes[ng.math.randomInt(0,this.nodeTypes.length-1)]
             var min = this.inputs.length
             var max = this.nodes.length - this.outputs.length
             var ran = ng.math.randomInt(min,max)
